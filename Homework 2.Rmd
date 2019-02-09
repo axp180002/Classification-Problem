@@ -1,0 +1,73 @@
+---
+title: "BUAN 6356 - Homework 2 - Abhishek"
+author: "Abhishek Pandey"
+date: "November 2, 2018"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Using ggplot2 package to create a scatter plot.
+
+```{r GGplot, echo=FALSE}
+
+library(tidyverse)
+library(leaps)
+library(caret)
+library(gplots)
+library(plyr)
+
+SysAdmin.df <- read.csv("SystemAdministrators.csv")
+
+SysAdmin.df$Completed.task <- as.factor(SysAdmin.df$Completed.task)
+Completed <- SysAdmin.df$Completed.task
+
+ggplot(SysAdmin.df) + 
+  geom_point(aes(x = Experience, y = Training, color = Completed), size = 2) +
+  theme_classic()+
+  xlab('Experience (Months)') +
+  ylab('Training Credits') +
+  ggtitle('Experience vs Training') +
+  theme(plot.title = element_text(hjust = 0.8)) +
+  scale_x_continuous(breaks = pretty(SysAdmin.df$Experience, n = 14))
+
+```
+
+Experience predictor appears potentially useful for classifying task completion as most employees with exp. greater than 8 have completed task. 
+
+# Logistic Regression
+
+```{r Logistic Regression, echo=TRUE}
+
+options(scipen = 1429)
+
+logit.reg <- glm(Completed.task ~ Experience + Training, 
+                 data = SysAdmin.df, family = "binomial")
+
+summary(logit.reg)
+
+```
+
+# Confusion Matrix
+
+```{r Confusion Matrix, echo=TRUE}
+
+training.df <- SysAdmin.df
+logit.reg.point.pred.training <- predict(logit.reg, data = training.df, type = "response")
+
+training.df$Completed.task <- revalue(training.df$Completed.task, c("Yes"=1))
+training.df$Completed.task <- revalue(training.df$Completed.task, c("No"=0))
+confusionMatrix(as.factor(as.numeric(logit.reg.point.pred.training>0.5)), training.df$Completed.task)
+
+```
+
+Percentage of programmers incorrectly classified as failing to complete the task > 5*100/15 = 33.33
+
+An experience of 9.14 months must be accumulated by a programmer with 6 years of training before his or her estimated probability of completing the task exceeds 0.6
+
+Calculation:
+log(0.6/(1-0.6)) = -10.9813 + 1.1269 x (Experience) + 0.1805 x 6
+= 9.14 months
